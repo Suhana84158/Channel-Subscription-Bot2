@@ -138,29 +138,67 @@ def get_plans(message):
     else:
         bot.send_message(ADMIN_ID, "❌ Forward message required.")
 
-
 def finalize_channel(message, ch_id, ch_name):
     try:
-        raw_plans = message.text.split(',')
+        text = message.text.strip()
+
         plans = {}
 
-        for p in raw_plans:
-            t, pr = p.strip().split(':')
-            plans[t] = pr
+        for item in text.split(","):
+            item = item.strip()
+
+            if ":" not in item:
+                bot.send_message(
+                    ADMIN_ID,
+                    "❌ Invalid format.\n\nExample:\n1440:99,43200:199"
+                )
+                return
+
+            time_str, price_str = item.split(":", 1)
+
+            time_str = time_str.strip()
+            price_str = price_str.strip()
+
+            if not time_str.isdigit():
+                bot.send_message(
+                    ADMIN_ID,
+                    "❌ Time must be a number.\nExample:\n1440:99"
+                )
+                return
+
+            try:
+                price = int(price_str)
+            except ValueError:
+                bot.send_message(
+                    ADMIN_ID,
+                    "❌ Price must be a number.\nExample:\n1440:99"
+                )
+                return
+
+            plans[time_str] = price
 
         channels_col.update_one(
             {"channel_id": ch_id},
-            {"$set": {"name": ch_name, "plans": plans, "admin_id": ADMIN_ID}},
+            {
+                "$set": {
+                    "name": ch_name,
+                    "plans": plans,
+                    "admin_id": ADMIN_ID
+                }
+            },
             upsert=True
         )
 
         bot.send_message(
             ADMIN_ID,
-            f"✅ Done!\nhttps://t.me/{BOT_USERNAME}?start={ch_id}"
+            f"✅ Channel Added Successfully!\n\nJoin Link:\nhttps://t.me/{BOT_USERNAME}?start={ch_id}"
         )
 
-    except:
-        bot.send_message(ADMIN_ID, "❌ Format error")
+    except Exception as e:
+        bot.send_message(
+            ADMIN_ID,
+            f"❌ Error:\n{str(e)}"
+        )
 
 
 # --- PAYMENT ---
